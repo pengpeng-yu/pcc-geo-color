@@ -42,7 +42,9 @@ def partition_pc(pc_file, block_size, keep_size, normalize, input_dir, output_di
                         tmp.blue /= 255
                     # save the block
                     new_pc = PyntCloud(tmp)
-                    new_pc.to_file(os.path.join(output_dir, f'{pc_file[:-4]}_nor_i{i:02d}j{j:02d}k{k:02d}.ply'))
+                    new_pc_path = os.path.join(output_dir, f'{pc_file[:-4]}_nor_i{i:02d}j{j:02d}k{k:02d}.ply')
+                    os.makedirs(os.path.dirname(new_pc_path), exist_ok=True)
+                    new_pc.to_file(new_pc_path)
                     
                     valid_blocks += 1
                     total_blocks += 1
@@ -52,7 +54,12 @@ def partition_pc(pc_file, block_size, keep_size, normalize, input_dir, output_di
 
 def run(args):
 
-    ply_files = sorted([f for f in os.listdir(args.input_dir) if '.ply' in f])
+    if args.input_list:
+        print(f'Using {args.input_list}')
+        with open(args.input_list) as f:
+            ply_files = [_.strip() for _ in f]
+    else:
+        ply_files = sorted([f for f in os.listdir(args.input_dir) if '.ply' in f])
     print(f'There are {len(ply_files)} .ply files.')
         
     os.makedirs(args.output_dir, exist_ok=True)
@@ -84,6 +91,7 @@ if __name__ == '__main__':
         'output_dir',
         help='Directory where to save point cloud blocks.')
 
+    parser.add_argument('--input_list', type=str, default='')
     parser.add_argument(
         '--block_size',
         type=int, help='Block size of partition blocks.', default=32)

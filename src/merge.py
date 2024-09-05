@@ -5,6 +5,7 @@ from pyntcloud import PyntCloud
 from tqdm import tqdm
 import pandas as pd
 import os
+import glob
 import argparse
 
 def merge_pc(ori_file, div_files, block_size, div_dir, output_dir, task):
@@ -32,15 +33,21 @@ def merge_pc(ori_file, div_files, block_size, div_dir, output_dir, task):
         points['green'] = (points.green * 255).astype('uint8')
         points['blue'] = (points.blue * 255).astype('uint8')
     res_pc = PyntCloud(points)
-    res_pc.to_file(os.path.join(output_dir, f'{ori_file[:-4]}_dec.ply'))
+    res_pc_path = os.path.join(output_dir, f'{ori_file[:-4]}_dec.ply')
+    os.makedirs(os.path.dirname(res_pc_path), exist_ok=True)
+    res_pc.to_file(res_pc_path)
 
 
 def run(args):
-
-    ori_files = sorted([f for f in os.listdir(args.ori_dir) if '.ply' in f])
+    if args.input_list:
+        print(f'Using {args.input_list}')
+        with open(args.input_list) as f:
+            ori_files = [_.strip() for _ in f]
+    else:
+        ori_files = sorted([f for f in os.listdir(args.input_dir) if '.ply' in f])
     print(f'There are {len(ori_files)} .ply files.')
 
-    div_files = sorted([f for f in os.listdir(args.div_dir) if '.ply' in f])
+    div_files = sorted(glob.glob(os.path.join(args.div_dir, '**', '*.ply'), recursive=True))
     print(f'There are {len(div_files)} divided .ply files.')
 
     os.makedirs(args.output_dir, exist_ok=True)
@@ -69,6 +76,7 @@ if __name__ == '__main__':
         'output_dir',
         help='Directory where to save merged point clouds.')
 
+    parser.add_argument('--input_list', type=str, default='')
     parser.add_argument(
         '--resolution',
         type=int, help='Resolution of blocks present in div_dir.', default=32)
